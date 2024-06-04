@@ -5,7 +5,6 @@ from pyspark.sql.functions import *
 from pyspark.sql.types import *
 from shapely.geometry import Polygon, Point
 
-
 inputPath = "taxi-data"
 outputPath = "output"
 
@@ -42,10 +41,12 @@ csvSchema = StructType([
     StructField("Trip_type", IntegerType(), True)
 ])
 
+
 def inarea(val1, val2, area):
     polygon = Polygon(area)
     point = Point(val1, val2)
     return polygon.contains(point)
+
 
 inarea_udf = udf(inarea, BooleanType())
 
@@ -56,54 +57,14 @@ streamingInputDF = (
     spark
     .readStream
     .schema(csvSchema)
-    .option("maxFilesPerTrigger", 1)  
-    .csv(inputPath) 
+    .option("maxFilesPerTrigger", 60)
+    .csv(inputPath)
 )
 
-# filteredStreamingDF = streamingInputDF.filter(
-#     # inarea_udf(streamingInputDF.Yellow_Dropoff_longitude, streamingInputDF.Yellow_Dropoff_latitude, goldman_bbox) |
-#     # inarea_udf(streamingInputDF.Yellow_Dropoff_longitude, streamingInputDF.Yellow_Dropoff_latitude, citigroup_bbox) |
-#     # inarea_udf(streamingInputDF.Green_Dropoff_longitude, streamingInputDF.Green_Dropoff_latitude, goldman_bbox) |
-#     # inarea_udf(streamingInputDF.Green_Dropoff_longitude, streamingInputDF.Green_Dropoff_latitude, citigroup_bbox)
-    
-# )
-
-# streamingInputDF = streamingInputDF.withColumn("headquarters",
-#                                                      when(inarea_udf(streamingInputDF.Yellow_Dropoff_longitude,
-#                                                                      streamingInputDF.Yellow_Dropoff_latitude,
-#                                                                      goldman_bbox) |
-#                                                           inarea_udf(streamingInputDF.Green_Dropoff_longitude,
-#                                                                      streamingInputDF.Green_Dropoff_latitude,
-#                                                                      goldman_bbox), "goldman")
-#                                                      .otherwise("citigroup"))
-
-# streamingCountsDF = (
-#     filteredStreamingDF
-#     .groupBy(window(filteredStreamingDF.Lpep_dropoff_datetime, "1 hour").alias("window"),
-#              col("headquarters"))
-#     .count()
-#     .withColumn("hour", hour(col("window").end))
-# )
-
-# def foreach_batch_function(df, id):
-#     for row in df.collect():
-#         outFileName = f"output-{int(row['hour']) * 360000}-{row['headquarters']}"
-#         with open(outFileName, "w") as f:
-#             f.write(f"{row['headquarters']}, {row['count']}")
-
-# query = (
-#     streamingCountsDF
-#     .writeStream
-#     .foreachBatch(foreach_batch_function)
-#     .outputMode("update")
-#     .start()
-# )
-
-# query.awaitTermination()
 
 def inarea(val1, val2, area):
     polygon = Polygon(area)
-
+    print([val1, val2])
     point = Point(val1, val2)
     return polygon.contains(point)
 
@@ -114,6 +75,7 @@ def classify(val1, val2):
     if inarea(val1, val2, citigroup):
         return 'citigroup'
     return 'none'
+
 
 values = []
 
@@ -127,44 +89,51 @@ values = []
 #     else:
 #        values.append(classify(glat, glng))
 #        print(values[-1])
-            
-            
+
+
 #     return 
 
 
 # create_headquarter_udf = udf(create_headquarter_column, ArrayType(StringType()))
 classify_udf = udf(classify, StringType())
+convertUDF = udf(lambda z: z)
 
 streamingCountsDF = (
     streamingInputDF
-    .withColumn("headquarters", when(col("type") == "yellow", classify_udf(col("Yellow_Dropoff_latitude"), col("Yellow_Dropoff_longitude")))\
-                .otherwise(classify_udf(col("Green_Dropoff_latitude"), col("Green_Dropoff_longitude")))        
-        )
+    .withColumn("lat", when(col("type") == "yellow", convertUDF(col("Yellow_Dropoff_latitude"))).otherwise(
+        convertUDF(col("Green_Dropoff_latitude"))))
+    .withColumn("long", when(col("type") == "yellow", convertUDF(col("Yellow_Dropoff_longitude"))).otherwise(
+        convertUDF(col("Green_Dropoff_longitude"))))
+
+    .withColumn("headquarters", classify_udf(col("long"), col("lat")))
     .groupBy(
         window(streamingInputDF.Lpep_dropoff_datetime, "1 hours").alias("window"),
+
         "headquarters"
     )
     .count()
     .withColumn("hour", hour(col("window").end))
 )
 
-# def foreach_batch_function(df, id):
-#     outFileName = "output-"
-#     # Transform and write batchDF
-#     rows = df.select("hour").collect()
-#
-#     for row in rows:
-#         filename = outputPath + "/" + outFileName + str(int(row[0]) * 360000)
-#         with open(filename, "w") as f:
-#             count = df.select("count").where(col("hour") == row[0]).collect()[0][0]
-#             f.write(str(count))
+
+def foreach_batch_function(df, id):
+    outFileName = "output3-"
+    # Transform and write batchDF
+    rows = df.select("hour").collect()
+    for row in rows:
+        filename = outputPath + "/" + outFileName + str((24 if int(row[0]) == 0 else int(row[0])) * 360000)
+
+        with open(filename, "w") as f:
+            citygroup_count = df.select("count").where(col("headquarters") == "citigroup").collect()[0][0]
+            goldman_count = df.select("count").where(col("headquarters") == "goldman").collect()[0][0]
+            f.write(str(("citigroup", citygroup_count)) + "\n" + str(("goldman", goldman_count)))
 
 
 query = (
     streamingCountsDF
     .writeStream
-    .format("console")
-    .outputMode("complete")
+    .foreachBatch(foreach_batch_function)  # complete = all the counts should be in the tabl
+    .outputMode("update")
     .start()
 )
 
