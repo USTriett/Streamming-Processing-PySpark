@@ -105,7 +105,7 @@ def foreach_batch_function(df, id):
     rows = df.select("hour").collect()
 
     for row in rows:
-        filename = outputPath + "/" + outFileName + str(int(row[0]) * 360000)
+        filename = outputPath + "/" + outFileName + str((24 if int(row[0]) == 0 else int(row[0])) * 360000)
         with open(filename, "w") as f:
             count = df.select("count").where(col("hour") == row[0]).collect()[0][0]
             f.write(str(count))
