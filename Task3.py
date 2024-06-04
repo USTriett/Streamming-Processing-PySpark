@@ -42,14 +42,6 @@ csvSchema = StructType([
 ])
 
 
-def inarea(val1, val2, area):
-    polygon = Polygon(area)
-    point = Point(val1, val2)
-    return polygon.contains(point)
-
-
-inarea_udf = udf(inarea, BooleanType())
-
 goldman = [[-74.0141012, 40.7152191], [-74.013777, 40.7152275], [-74.0141027, 40.7138745], [-74.0144185, 40.7140753]]
 citigroup = [[-74.011869, 40.7217236], [-74.009867, 40.721493], [-74.010140, 40.720053], [-74.012083, 40.720267]]
 
@@ -132,9 +124,10 @@ def foreach_batch_function(df, id):
 query = (
     streamingCountsDF
     .writeStream
-    .foreachBatch(foreach_batch_function)  # complete = all the counts should be in the tabl
-    .outputMode("update")
+    # .foreachBatch(foreach_batch_function)  # complete = all the counts should be in the tabl
+    .format("console")
+    .outputMode("complete")
     .start()
 )
 
-query.awaitTermination()
+query.awaitTermination(10)
