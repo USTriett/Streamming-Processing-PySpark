@@ -69,23 +69,6 @@ def classify(val1, val2):
     return 'none'
 
 
-values = []
-
-# def create_headquarter_column(type ,ylat, ylng, glat, glng):
-
-#     print(type)
-#     if type == "yellow":
-#        values.append(classify(ylat, ylng))
-#        print(values[-1])
-
-#     else:
-#        values.append(classify(glat, glng))
-#        print(values[-1])
-
-
-#     return 
-
-
 # create_headquarter_udf = udf(create_headquarter_column, ArrayType(StringType()))
 classify_udf = udf(classify, StringType())
 convertUDF = udf(lambda z: z)
@@ -124,10 +107,10 @@ def foreach_batch_function(df, id):
 query = (
     streamingCountsDF
     .writeStream
-    # .foreachBatch(foreach_batch_function)  # complete = all the counts should be in the tabl
-    .format("console")
+    .foreachBatch(foreach_batch_function)  # complete = all the counts should be in the tabl
+    .format("update")
     .outputMode("complete")
     .start()
 )
 
-query.awaitTermination(10)
+query.awaitTermination()
