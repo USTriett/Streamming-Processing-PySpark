@@ -7,55 +7,7 @@ inputPath = "taxi-data"
 outputPath = "output"
 # Define the schema to speed up processing
 
-
-# yellowSchema = StructType([
-#     StructField("type", StringType(), True),
-#     StructField("VendorID", IntegerType(), True),
-#     StructField("tpep_pickup_datetime", TimestampType(), True),
-#     StructField("tpep_dropoff_datetime", TimestampType(), True),
-#     StructField("passenger_count", IntegerType(), True),
-#     StructField("trip_distance", FloatType(), True),
-#     StructField("pickup_longitude", FloatType(), True),
-#     StructField("pickup_latitude", FloatType(), True),
-#     StructField("RatecodeID", IntegerType(), True),
-#     StructField("store_and_fwd_flag", StringType(), True),
-#     StructField("dropoff_longitude", FloatType(), True),
-#     StructField("dropoff_latitude", FloatType(), True),
-#     StructField("payment_type", IntegerType(), True),
-#     StructField("fare_amount", FloatType(), True),
-#     StructField("extra", FloatType(), True),
-#     StructField("mta_tax", FloatType(), True),
-#     StructField("tip_amount", FloatType(), True),
-#     StructField("tolls_amount", FloatType(), True),
-#     StructField("improvement_surcharge", FloatType(), True),
-#     StructField("total_amount", FloatType(), True)
-# ])
-#
-# greenSchema = StructType([
-#     StructField("type", StringType(), True),
-#     StructField("VendorID", IntegerType(), True),
-#     StructField("lpep_pickup_datetime", TimestampType(), True),
-#     StructField("Lpep_dropoff_datetime", TimestampType(), True),
-#     StructField("Store_and_fwd_flag", StringType(), True),
-#     StructField("RateCodeID", IntegerType(), True),
-#     StructField("Pickup_longitude", FloatType(), True),
-#     StructField("Pickup_latitude", FloatType(), True),
-#     StructField("Dropoff_longitude", FloatType(), True),
-#     StructField("Dropoff_latitude", FloatType(), True),
-#     StructField("Passenger_count", IntegerType(), True),
-#     StructField("Trip_distance", FloatType(), True),
-#     StructField("Fare_amount", FloatType(), True),
-#     StructField("Extra", FloatType(), True),
-#     StructField("MTA_tax", FloatType(), True),
-#     StructField("Tip_amount", FloatType(), True),
-#     StructField("Tolls_amount", FloatType(), True),
-#     StructField("Ehail_fee", FloatType(), True),
-#     StructField("improvement_surcharge", FloatType(), True),
-#     StructField("Total_amount", FloatType(), True),
-#     StructField("Payment_type", IntegerType(), True),
-#     StructField("Trip_type", IntegerType(), True)
-# ])
-
+#based on green taxi
 csvSchema = StructType([
     StructField("type", StringType(), True),
     StructField("VendorID", IntegerType(), True),
