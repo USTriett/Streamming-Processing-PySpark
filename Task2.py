@@ -119,4 +119,4 @@ query = (
     .start()
 )
 
-query.awaitTermination(10)
+query.awaitTermination()
