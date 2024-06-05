@@ -108,8 +108,7 @@ query = (
     streamingCountsDF
     .writeStream
     .foreachBatch(foreach_batch_function)  # complete = all the counts should be in the tabl
-    .format("update")
-    .outputMode("complete")
+    .outputMode("update")
     .start()
 )
 
